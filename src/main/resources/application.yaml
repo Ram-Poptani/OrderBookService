@@ -1,1 +1,3 @@
-
+bitstamp:
+    web-socket-uri: wss://ws.bitstamp.net
+    web-socket-channel: live_orders_btcusd
