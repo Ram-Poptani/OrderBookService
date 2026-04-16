@@ -2,6 +2,7 @@
   <dictionary name="project">
     <words>
       <w>bitstamp</w>
+      <w>microtimestamp</w>
     </words>
   </dictionary>
 </component>
