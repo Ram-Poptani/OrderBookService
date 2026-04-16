@@ -19,6 +19,10 @@ public class BitstampOrderData {
     @JsonProperty("order_type")
     private int orderType;
 
+
+    @JsonProperty("order_subtype")
+    private int orderSubtype;
+
     private BigDecimal price;
 
     @JsonProperty("price_str")
