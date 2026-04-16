@@ -1,15 +1,13 @@
 package org.binance.orderbookservice.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Builder
 public class OrderEvent {
 
     long id;
