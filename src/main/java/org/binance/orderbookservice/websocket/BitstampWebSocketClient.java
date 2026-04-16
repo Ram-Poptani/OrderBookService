@@ -1,17 +1,19 @@
 package org.binance.orderbookservice.websocket;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import lombok.extern.slf4j.Slf4j;
+import java.net.URI;
+import java.util.Map;
+
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
-import java.util.Map;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
+import lombok.extern.slf4j.Slf4j;
 
 
 @Component
@@ -49,7 +51,7 @@ public class BitstampWebSocketClient {
                         try {
                             this.send(objectMapper.writeValueAsString(msg));
                         } catch (JsonProcessingException e) {
-                            throw new RuntimeException(e);
+                            throw new RuntimeException("Failed to serialize Bitstamp subscription message", e);
                         }
 
                     }
@@ -78,7 +80,7 @@ public class BitstampWebSocketClient {
                     }
                 };
                 emitter.setCancellable(() -> {
-                    if(client.isOpen()) {
+                    if (client.isOpen()) {
                         client.close();
                     }
                 });
