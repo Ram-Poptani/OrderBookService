@@ -64,15 +64,12 @@ public class OrderEventConverterTest {
     @Test
     void deserialize_invalidJson_throwsException() {
         String invalidJson = "{ invalid json }";
-
-
         assertThatThrownBy(() -> converter.deserialize(invalidJson))
                 .isInstanceOf(OrderEventParseException.class)
                 .hasMessageContaining("Failed to parse Bitstamp order event JSON");
     }
 
-    @Test
-    void toOrderEvent_validResponse_returnsOrderEvent() {
+    private BitstampResponse sampleResponse(String event) {
         BitstampOrderData data = new BitstampOrderData();
         data.setId(123L);
         data.setOrderType(0);
@@ -82,12 +79,16 @@ public class OrderEventConverterTest {
         data.setMicrotimestamp("1775715433800000");
 
         BitstampResponse response = new BitstampResponse();
-        response.setEvent("order_created");
+        response.setEvent(event);
         response.setChannel("live_orders_btcusd");
         response.setData(data);
+        return response;
+    }
 
+    @Test
+    void toOrderEvent_validResponse_returnsOrderEvent() {
+        BitstampResponse response = this.sampleResponse("order_created");
         OrderEvent orderEvent = converter.toOrderEvent(response);
-
         assertThat(orderEvent.getOrderType()).isEqualTo(OrderType.BID);
         assertThat(orderEvent.getEventType()).isEqualTo(EventType.ORDER_CREATED);
         assertThat(orderEvent.getPrice()).isEqualByComparingTo("71009");
@@ -96,19 +97,7 @@ public class OrderEventConverterTest {
 
     @Test
     void toOrderEvent_invalidResponse_throwsException() {
-        BitstampOrderData data = new BitstampOrderData();
-        data.setId(123L);
-        data.setOrderType(0);
-        data.setPriceStr("71009");
-        data.setAmountStr("0.045");
-        data.setAmountTraded("0");
-        data.setMicrotimestamp("1775715433800000");
-
-        BitstampResponse response = new BitstampResponse();
-        response.setEvent("bts:subscription_succeeded");
-        response.setChannel("live_orders_btcusd");
-        response.setData(data);
-
+        BitstampResponse response = this.sampleResponse("bts:subscription_succeeded");
         assertThatThrownBy(() -> converter.toOrderEvent(response))
                 .isInstanceOf(IllegalArgumentException.class);
     }
