@@ -23,7 +23,7 @@ public class OrderEventConverter {
         this.objectMapper = objectMapper;
     }
 
-    BitstampResponse deserialize(String json) {
+    public BitstampResponse deserialize(String json) {
         try {
             return objectMapper.readValue(json, BitstampResponse.class);
         } catch (JsonProcessingException e) {
