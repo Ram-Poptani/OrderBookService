@@ -1,17 +1,16 @@
 package org.binance.orderbookservice.engine;
 
 import lombok.extern.slf4j.Slf4j;
-import org.binance.orderbookservice.model.Order;
-import org.binance.orderbookservice.model.OrderBookSnapshot;
-import org.binance.orderbookservice.model.OrderEvent;
-import org.binance.orderbookservice.model.OrderType;
+import org.binance.orderbookservice.model.*;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -110,5 +109,33 @@ public class OrderBook {
                 .timestamp(System.currentTimeMillis())
                 .build();
 
+    }
+
+    private List<PriceLevel> sliceLevels(ConcurrentSkipListMap<BigDecimal, BigDecimal> side, int levels) {
+        Stream<Map.Entry<BigDecimal, BigDecimal>> stream = side.entrySet().stream();
+        if (levels > 0) {
+            stream = stream.limit(levels);
+        }
+        return stream.map(e ->
+                            new PriceLevel(e.getKey(), e.getValue())
+                        ).toList();
+    }
+
+    public OrderBookView getView(int levels) {
+
+        List<PriceLevel> bidLevels = sliceLevels(bids, levels);
+        List<PriceLevel> askLevels = sliceLevels(asks, levels);
+
+        BigDecimal spread = (!bidLevels.isEmpty() && !askLevels.isEmpty())
+                ? askLevels.get(0).getPrice().subtract(bidLevels.get(0).getPrice())
+                : null;
+
+        return new OrderBookView(
+                bidLevels,
+                askLevels,
+                spread,
+                levels,
+                System.currentTimeMillis()
+        );
     }
 }
