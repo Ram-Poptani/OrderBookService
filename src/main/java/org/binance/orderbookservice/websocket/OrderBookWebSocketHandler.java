@@ -38,10 +38,10 @@ public class OrderBookWebSocketHandler implements WebSocketHandler {
         log.info("WebSocket client connected: sessionId={}, levels={}", session.getId(), levels);
 
         Flux<String> messages = Flux.from(
-            pipeline.snapshotStream()
-                    .sample(1, TimeUnit.SECONDS))
-            .map(snapshot -> orderBook.getView(levels))
-            .map(this::toJson);
+                pipeline.snapshotStream()
+                        .sample(1, TimeUnit.SECONDS))
+                .map(snapshot -> orderBook.getView(levels))
+                .map(this::toJson);
 
         return session.send(messages.map(session::textMessage))
                 .doFinally(sig -> log.info("WebSocket client disconnected: sessionId={}, reason={}",
