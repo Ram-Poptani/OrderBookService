@@ -1,11 +1,13 @@
 package org.binance.orderbookservice.service;
 
-import org.binance.orderbookservice.model.*;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.binance.orderbookservice.model.EventType;
+import org.binance.orderbookservice.model.OrderEvent;
+import org.binance.orderbookservice.model.OrderType;
+import org.binance.orderbookservice.model.SequenceState;
+import org.junit.jupiter.api.Test;
 
 class GapDetectionTest {
 
