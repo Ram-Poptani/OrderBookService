@@ -65,10 +65,15 @@ public class BitstampWebSocketClient {
 
                     @Override
                     public void onClose(int code, String reason, boolean remote) {
-                        if (!emitter.isCancelled()) {
-                            emitter.onComplete();
-                        }
                         log.warn("WebSocket closed: code={}, reason={}, remote={}", code, reason, remote);
+                        if (!emitter.isCancelled()) {
+                            if (remote) {
+                                emitter.onError(new RuntimeException(
+                                    "WebSocket closed by server: code=" + code + ", reason=" + reason));
+                            } else {
+                                emitter.onComplete();
+                            }
+                        }
                     }
 
                     @Override
