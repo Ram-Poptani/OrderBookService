@@ -1,13 +1,15 @@
 package org.binance.orderbookservice.service;
 
+import org.binance.orderbookservice.engine.OrderBook;
+import org.binance.orderbookservice.model.SequenceState;
+import org.binance.orderbookservice.websocket.BitstampWebSocketClient;
+import org.springframework.stereotype.Component;
+
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.binance.orderbookservice.engine.OrderBook;
-import org.binance.orderbookservice.websocket.BitstampWebSocketClient;
-import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
@@ -53,6 +55,23 @@ public class OrderBookPipeline {
                         return Flowable.empty();
                     }
                 })
+                .scan(new SequenceState(null, null, false), (previousState, currentEvent) -> {
+                    boolean gap = previousState.getLastEventId() != null
+                            && currentEvent.getPreEventId() != null
+                            && !previousState.getLastEventId().equals(currentEvent.getPreEventId());
+
+                    return new SequenceState(currentEvent.getEventId(), currentEvent, gap);
+                })
+                .skip(1)
+                .doOnNext(state -> {
+                    if (state.isGapDetected()) {
+                        log.warn("Gap detected! last={}, preEventId={}, eventId={}",
+                                state.getLastEventId(), state.getOrderEvent().getPreEventId(),
+                                state.getOrderEvent().getEventId());
+                        orderBook.clear();
+                    }
+                })
+                .map(SequenceState::getOrderEvent)
                 .map(orderBook::applyEvent)
                 .distinctUntilChanged()
                 .subscribe(snapshot -> log.info("Book Updated: bid = {} @ {}, ask = {} @ {}, spread = {}",
