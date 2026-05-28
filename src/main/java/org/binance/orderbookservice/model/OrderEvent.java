@@ -33,4 +33,7 @@ public class OrderEvent {
     @NonNull
     String channel;
 
+    String eventId;
+    String preEventId;
+
 }
