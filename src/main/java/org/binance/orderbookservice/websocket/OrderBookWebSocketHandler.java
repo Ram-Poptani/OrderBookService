@@ -1,5 +1,7 @@
 package org.binance.orderbookservice.websocket;
 
+import java.util.concurrent.TimeUnit;
+
 import org.binance.orderbookservice.engine.OrderBook;
 import org.binance.orderbookservice.service.OrderBookPipeline;
 import org.springframework.stereotype.Component;
@@ -35,9 +37,11 @@ public class OrderBookWebSocketHandler implements WebSocketHandler {
         int levels = parseLevels(session);
         log.info("WebSocket client connected: sessionId={}, levels={}", session.getId(), levels);
 
-        Flux<String> messages = Flux.from(pipeline.snapshotStream())
-                .map(snapshot -> orderBook.getView(levels))
-                .map(this::toJson);
+        Flux<String> messages = Flux.from(
+            pipeline.snapshotStream()
+                    .sample(1, TimeUnit.SECONDS))
+            .map(snapshot -> orderBook.getView(levels))
+            .map(this::toJson);
 
         return session.send(messages.map(session::textMessage))
                 .doFinally(sig -> log.info("WebSocket client disconnected: sessionId={}, reason={}",
