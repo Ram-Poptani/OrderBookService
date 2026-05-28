@@ -1,12 +1,15 @@
 package org.binance.orderbookservice.service;
 
 import org.binance.orderbookservice.engine.OrderBook;
+import org.binance.orderbookservice.model.OrderBookSnapshot;
 import org.binance.orderbookservice.model.SequenceState;
 import org.binance.orderbookservice.websocket.BitstampWebSocketClient;
 import org.springframework.stereotype.Component;
 
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.processors.BehaviorProcessor;
+import io.reactivex.rxjava3.processors.FlowableProcessor;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,9 @@ public class OrderBookPipeline {
 
     private Disposable disposable;
 
+    private final FlowableProcessor<OrderBookSnapshot> snapshotProcessor = BehaviorProcessor.<OrderBookSnapshot>create()
+            .toSerialized();
+
     OrderBookPipeline(
             BitstampWebSocketClient webSocketClient,
             OrderEventConverter converter,
@@ -27,6 +33,10 @@ public class OrderBookPipeline {
         this.webSocketClient = webSocketClient;
         this.converter = converter;
         this.orderBook = orderBook;
+    }
+
+    public Flowable<OrderBookSnapshot> snapshotStream() {
+        return snapshotProcessor.onBackpressureLatest();
     }
 
     @PostConstruct
@@ -74,6 +84,7 @@ public class OrderBookPipeline {
                 .map(SequenceState::getOrderEvent)
                 .map(orderBook::applyEvent)
                 .distinctUntilChanged()
+                .doOnNext(snapshotProcessor::onNext)
                 .subscribe(snapshot -> log.info("Book Updated: bid = {} @ {}, ask = {} @ {}, spread = {}",
                         snapshot.getBestBidAmount(), snapshot.getBestBidPrice(),
                         snapshot.getBestAskAmount(), snapshot.getBestAskPrice(),
