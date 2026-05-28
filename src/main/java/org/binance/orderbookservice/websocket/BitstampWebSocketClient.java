@@ -2,6 +2,7 @@ package org.binance.orderbookservice.websocket;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -91,8 +92,17 @@ public class BitstampWebSocketClient {
                 });
                 client.connect();
 
-            }, BackpressureStrategy.BUFFER).publish().refCount();
-
+            }, BackpressureStrategy.BUFFER)
+            .doOnError(e -> log.error("Stream error, will retry: {}", e.getMessage()))
+            .retryWhen(errors -> errors
+                .zipWith(Flowable.range(1, 5), (err, attempt) -> attempt)
+                .flatMap(attempt -> {
+                    long delay = (long) Math.pow(2, attempt);
+                    log.info("Reconnecting in {} seconds (attempt {}/5)", delay, attempt);
+                    return Flowable.timer(delay, TimeUnit.SECONDS);
+                })
+            )
+            .publish().refCount();
         }
         return sharedStream;
     }
