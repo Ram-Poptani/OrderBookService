@@ -1,5 +1,6 @@
 package org.binance.orderbookservice.service;
 
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -33,8 +34,22 @@ public class OrderBookPipeline {
                 .filter(json -> json.contains("order_created")
                                         || json.contains("order_changed")
                                         || json.contains("order_deleted"))
-                .map(converter::deserialize)
-                .map(converter::toOrderEvent)
+                .flatMap(json -> {
+                    try {
+                        return Flowable.just(converter.deserialize(json));
+                    } catch (Exception e) {
+                        log.warn("Skipping unparseable message: {}", e.getMessage());
+                        return Flowable.empty();
+                    }
+                })
+                .flatMap(response -> {
+                    try {
+                        return Flowable.just(converter.toOrderEvent(response));
+                    } catch (Exception e) {
+                        log.warn("Skipping unconvertible event: {}", e.getMessage());
+                        return Flowable.empty();
+                    }
+                })
                 .map(orderBook::applyEvent)
                 .distinctUntilChanged()
                 .subscribe(snapshot -> log.info("Book Updated: bid = {} @ {}, ask = {} @ {}, spread = {}",
