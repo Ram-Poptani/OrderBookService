@@ -19,10 +19,9 @@ public class OrderBookPipeline {
     private Disposable disposable;
 
     OrderBookPipeline(
-        BitstampWebSocketClient webSocketClient,
-        OrderEventConverter converter,
-        OrderBook orderBook
-    ) {
+            BitstampWebSocketClient webSocketClient,
+            OrderEventConverter converter,
+            OrderBook orderBook) {
         this.webSocketClient = webSocketClient;
         this.converter = converter;
         this.orderBook = orderBook;
@@ -30,10 +29,14 @@ public class OrderBookPipeline {
 
     @PostConstruct
     public void start() {
-        disposable =  webSocketClient.stream()
+        disposable = webSocketClient.stream()
+                .doOnSubscribe(subscription -> {
+                    orderBook.clear();
+                    log.info("(Re)Starting order book pipeline");
+                })
                 .filter(json -> json.contains("order_created")
-                                        || json.contains("order_changed")
-                                        || json.contains("order_deleted"))
+                        || json.contains("order_changed")
+                        || json.contains("order_deleted"))
                 .flatMap(json -> {
                     try {
                         return Flowable.just(converter.deserialize(json));
@@ -53,11 +56,11 @@ public class OrderBookPipeline {
                 .map(orderBook::applyEvent)
                 .distinctUntilChanged()
                 .subscribe(snapshot -> log.info("Book Updated: bid = {} @ {}, ask = {} @ {}, spread = {}",
-                                                                snapshot.getBestBidAmount(), snapshot.getBestBidPrice(),
-                                                                snapshot.getBestAskAmount(), snapshot.getBestAskPrice(),
-                                                                snapshot.getSpread()),
-                                    error -> log.error("Error processing order book event", error),
-                                                () -> log.info("WebSocket stream completed"));
+                        snapshot.getBestBidAmount(), snapshot.getBestBidPrice(),
+                        snapshot.getBestAskAmount(), snapshot.getBestAskPrice(),
+                        snapshot.getSpread()),
+                        error -> log.error("Error processing order book event", error),
+                        () -> log.info("WebSocket stream completed"));
     }
 
     @PreDestroy

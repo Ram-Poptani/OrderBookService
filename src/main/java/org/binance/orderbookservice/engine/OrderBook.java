@@ -16,22 +16,19 @@ import java.util.stream.Stream;
 @Slf4j
 public class OrderBook {
 
-    private final ConcurrentSkipListMap<BigDecimal, BigDecimal> bids =
-            new ConcurrentSkipListMap<>(Comparator.reverseOrder());
+    private final ConcurrentSkipListMap<BigDecimal, BigDecimal> bids = new ConcurrentSkipListMap<>(
+            Comparator.reverseOrder());
 
-    private final ConcurrentSkipListMap<BigDecimal, BigDecimal> asks =
-            new ConcurrentSkipListMap<>();
+    private final ConcurrentSkipListMap<BigDecimal, BigDecimal> asks = new ConcurrentSkipListMap<>();
 
-    private final ConcurrentHashMap<Long, Order> orderIndex =
-            new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Order> orderIndex = new ConcurrentHashMap<>();
 
     private void handleCreate(OrderEvent event) {
         Order order = new Order(
                 event.getId(),
                 event.getPrice(),
                 event.getAmount(),
-                event.getOrderType()
-        );
+                event.getOrderType());
         orderIndex.put(order.getId(), order);
         if (order.getType() == OrderType.BID) {
             bids.merge(order.getPrice(), order.getAmount(), BigDecimal::add);
@@ -40,7 +37,6 @@ public class OrderBook {
         }
     }
 
-
     private void handleChange(OrderEvent event) {
         Order old = orderIndex.get(event.getId());
         if (old == null) {
@@ -48,8 +44,7 @@ public class OrderBook {
             return;
         }
 
-        ConcurrentSkipListMap<BigDecimal, BigDecimal> side =
-                old.getType() == OrderType.BID ? bids : asks;
+        ConcurrentSkipListMap<BigDecimal, BigDecimal> side = old.getType() == OrderType.BID ? bids : asks;
 
         BigDecimal delta = event.getAmount().subtract(old.getAmount());
         side.merge(old.getPrice(), delta, BigDecimal::add);
@@ -65,13 +60,11 @@ public class OrderBook {
             return;
         }
 
-        ConcurrentSkipListMap<BigDecimal, BigDecimal> side =
-                old.getType() == OrderType.BID ? bids : asks;
+        ConcurrentSkipListMap<BigDecimal, BigDecimal> side = old.getType() == OrderType.BID ? bids : asks;
 
         side.merge(old.getPrice(), old.getAmount().negate(), BigDecimal::add);
 
-        side.computeIfPresent(old.getPrice(), (price, total) ->
-                total.signum() <= 0 ? null : total);
+        side.computeIfPresent(old.getPrice(), (price, total) -> total.signum() <= 0 ? null : total);
 
         orderIndex.remove(event.getId());
     }
@@ -82,7 +75,8 @@ public class OrderBook {
             case ORDER_CHANGED -> handleChange(event);
             case ORDER_DELETED -> handleDelete(event);
         }
-        return snapshot();    }
+        return snapshot();
+    }
 
     public OrderBookSnapshot snapshot() {
 
@@ -94,7 +88,7 @@ public class OrderBook {
         BigDecimal spread = (bestBidPrice != null && bestAskPrice != null)
                 ? bestAskPrice.subtract(bestBidPrice)
                 : null;
-        
+
         int bidLevelCount = bids.size();
         int askLevelCount = asks.size();
 
@@ -116,9 +110,7 @@ public class OrderBook {
         if (levels > 0) {
             stream = stream.limit(levels);
         }
-        return stream.map(e ->
-                            new PriceLevel(e.getKey(), e.getValue())
-                        ).toList();
+        return stream.map(e -> new PriceLevel(e.getKey(), e.getValue())).toList();
     }
 
     public OrderBookView getView(int levels) {
@@ -135,7 +127,13 @@ public class OrderBook {
                 askLevels,
                 spread,
                 levels,
-                System.currentTimeMillis()
-        );
+                System.currentTimeMillis());
+    }
+
+    public void clear() {
+        bids.clear();
+        asks.clear();
+        orderIndex.clear();
+        log.info("Order book cleared");
     }
 }
