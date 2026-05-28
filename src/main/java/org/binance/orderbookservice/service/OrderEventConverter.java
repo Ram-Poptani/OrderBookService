@@ -47,6 +47,8 @@ public class OrderEventConverter {
                 .amountTraded(new BigDecimal(data.getAmountTraded()))
                 .microtimestamp(data.getMicrotimestamp())
                 .channel(response.getChannel())
+                .eventId(response.getEventId())
+                .preEventId(response.getPreEventId())
                 .build();
     }
 }
