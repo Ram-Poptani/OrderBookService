@@ -136,4 +136,12 @@ public class OrderBook {
         orderIndex.clear();
         log.info("Order book cleared");
     }
+
+    public int bidLevelCount() {
+        return bids.size();
+    }
+
+    public int askLevelCount() {
+        return asks.size();
+    }
 }

@@ -1,6 +1,7 @@
 package org.binance.orderbookservice.service;
 
 import org.binance.orderbookservice.engine.OrderBook;
+import org.binance.orderbookservice.metrics.OrderBookMetrics;
 import org.binance.orderbookservice.model.OrderBookSnapshot;
 import org.binance.orderbookservice.model.SequenceState;
 import org.binance.orderbookservice.websocket.BitstampWebSocketClient;
@@ -20,6 +21,7 @@ public class OrderBookPipeline {
     private final BitstampWebSocketClient webSocketClient;
     private final OrderEventConverter converter;
     private final OrderBook orderBook;
+    private final OrderBookMetrics metrics;
 
     private Disposable disposable;
 
@@ -29,10 +31,12 @@ public class OrderBookPipeline {
     OrderBookPipeline(
             BitstampWebSocketClient webSocketClient,
             OrderEventConverter converter,
-            OrderBook orderBook) {
+            OrderBook orderBook,
+            OrderBookMetrics metrics) {
         this.webSocketClient = webSocketClient;
         this.converter = converter;
         this.orderBook = orderBook;
+        this.metrics = metrics;
     }
 
     public Flowable<OrderBookSnapshot> snapshotStream() {
@@ -78,13 +82,17 @@ public class OrderBookPipeline {
                         log.warn("Gap detected! last={}, preEventId={}, eventId={}",
                                 state.getLastEventId(), state.getOrderEvent().getPreEventId(),
                                 state.getOrderEvent().getEventId());
+                        metrics.getGapRebuilds().increment();
                         orderBook.clear();
                     }
                 })
                 .map(SequenceState::getOrderEvent)
-                .map(orderBook::applyEvent)
+                .map(event -> metrics.getApplyTimer().record(() -> orderBook.applyEvent(event)))
                 .distinctUntilChanged()
-                .doOnNext(snapshotProcessor::onNext)
+                .doOnNext(snapshot -> {
+                    metrics.getUpdates().increment();
+                    snapshotProcessor.onNext(snapshot);
+                })
                 .subscribe(snapshot -> log.info("Book Updated: bid = {} @ {}, ask = {} @ {}, spread = {}",
                         snapshot.getBestBidAmount(), snapshot.getBestBidPrice(),
                         snapshot.getBestAskAmount(), snapshot.getBestAskPrice(),

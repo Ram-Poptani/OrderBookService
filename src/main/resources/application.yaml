@@ -3,3 +3,16 @@ server:
 bitstamp:
     web-socket-uri: wss://ws.bitstamp.net
     web-socket-channel: live_orders_btcusd
+
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,prometheus,metrics
+    endpoint:
+        health:
+            show-details: always
+    prometheus:
+        metrics:
+            export:
+                enabled: true
