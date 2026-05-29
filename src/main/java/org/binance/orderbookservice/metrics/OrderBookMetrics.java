@@ -1,12 +1,13 @@
 package org.binance.orderbookservice.metrics;
 
+import org.binance.orderbookservice.engine.OrderBook;
+import org.springframework.stereotype.Component;
+
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.Getter;
-import org.binance.orderbookservice.engine.OrderBook;
-import org.springframework.stereotype.Component;
 
 @Component
 @Getter

@@ -1,9 +1,5 @@
 package org.binance.orderbookservice.engine;
 
-import lombok.extern.slf4j.Slf4j;
-import org.binance.orderbookservice.model.*;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -11,6 +7,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Stream;
+
+import org.binance.orderbookservice.model.Order;
+import org.binance.orderbookservice.model.OrderBookSnapshot;
+import org.binance.orderbookservice.model.OrderBookView;
+import org.binance.orderbookservice.model.OrderEvent;
+import org.binance.orderbookservice.model.OrderType;
+import org.binance.orderbookservice.model.PriceLevel;
+import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
